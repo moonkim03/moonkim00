@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 상품 모니터링</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--surface:#141420;--surface2:#1a1a28;--surface3:#222232;
+  --border:#2a2a3a;--text:#eaeaf2;--text2:#9898aa;--text3:#606070;
+  --accent:#ff6b35;--accent2:#ff8f5e;--accentBg:rgba(255,107,53,.08);
+}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+
+/* ── Header ── */
+.header{text-align:center;margin-bottom:24px}
+.header h1{font-size:24px;font-weight:900;margin-bottom:4px}
+.header h1 span{color:var(--accent)}
+.header .by{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* ── Landing ── */
+.landing{display:flex;flex-direction:column;align-items:center;padding:40px 0 20px}
+.menu-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.menu-card{
+  width:200px;padding:32px 20px 28px;border-radius:16px;text-align:center;
+  background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .3s;
+}
+.menu-card:hover{border-color:var(--accent);transform:translateY(-4px);box-shadow:0 12px 36px rgba(0,0,0,.4)}
+.menu-card .mc-icon{width:56px;height:56px;border-radius:14px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.menu-card .mc-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.menu-card .mc-desc{font-size:11px;color:var(--text3);line-height:1.5}
+
+/* ── Back ── */
+.back-btn{
+  display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;
+  border:1px solid var(--border);background:transparent;color:var(--text2);
+  font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;margin-bottom:16px;
+}
+.back-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── Page Title ── */
+.page-title{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.page-title .pt-icon{font-size:24px}
+.page-title .pt-text{font-size:18px;font-weight:800}
+.page-title .pt-desc{font-size:12px;color:var(--text3)}
+
+/* ═══ Search Page (card grid style) ═══ */
+.sp-header{text-align:center;margin-bottom:28px}
+.sp-tag{
+  display:inline-block;padding:5px 16px;border-radius:20px;
+  background:var(--accentBg);border:1px solid rgba(255,107,53,.15);
+  font-size:11px;font-weight:600;color:var(--accent);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:12px;
+}
+.sp-title{font-size:clamp(24px,4vw,36px);font-weight:900;margin-bottom:6px}
+.sp-title span{color:var(--accent)}
+.sp-sub{font-size:13px;color:var(--text2)}
+
+.sp-search{
+  max-width:580px;margin:0 auto 24px;display:flex;gap:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;transition:border-color .2s;
+}
+.sp-search:focus-within{border-color:var(--accent)}
+.sp-search input{
+  flex:1;padding:14px 18px;border:none;background:transparent;color:var(--text);
+  font-size:15px;font-family:inherit;outline:none;
+}
+.sp-search input::placeholder{color:var(--text3)}
+.sp-search button{
+  padding:0 28px;border:none;background:var(--accent);color:#fff;
+  font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;
+}
+.sp-search button:hover{background:var(--accent2)}
+
+/* Result header */
+.sp-result-bar{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;
+}
+.sp-result-bar .kw{font-size:16px;font-weight:800}
+.sp-result-bar .kw em{color:var(--accent);font-style:normal}
+.sp-result-bar .sub{font-size:12px;color:var(--text2)}
+.sp-reset{
+  padding:6px 14px;border-radius:7px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:inherit;
+}
+.sp-reset:hover{border-color:var(--accent);color:var(--accent)}
+
+.sp-tip{
+  margin-bottom:16px;padding:12px 16px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+  font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px;
+}
+
+.sp-openall{
+  display:inline-flex;align-items:center;gap:5px;padding:10px 22px;border-radius:20px;
+  border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:all .2s;margin-bottom:20px;
+}
+.sp-openall:hover{background:var(--accent2);transform:translateY(-1px)}
+
+/* Card Grid */
+.card-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+}
+.site-card{
+  display:flex;align-items:center;gap:12px;padding:16px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .25s;
+}
+.site-card:hover{border-color:var(--accent);background:var(--surface2);transform:translateY(-2px)}
+.sc-icon{
+  width:42px;height:42px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.sc-info{flex:1;min-width:0}
+.sc-name{font-size:14px;font-weight:700}
+.sc-domain{font-size:10px;color:var(--text3);margin-top:1px}
+.sc-arrow{
+  color:var(--text3);font-size:16px;transition:all .2s;flex-shrink:0;
+}
+.site-card:hover .sc-arrow{color:var(--accent);transform:translateX(3px)}
+
+/* ═══ Crawler iframe ═══ */
+.crawler-frame{
+  width:100%;height:calc(100vh - 160px);min-height:500px;border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;background:var(--surface);
+}
+.crawler-frame iframe{width:100%;height:100%;border:none}
+.crawler-status{
+  margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.crawler-status.ok{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.15);color:#34d399}
+.crawler-status.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);color:#ef4444}
+
+/* ═══ Best Ranking ═══ */
+.sites-list{display:flex;flex-direction:column;gap:4px}
+.site-row{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .2s;
+}
+.site-row:hover{border-color:var(--accent);background:var(--surface2);transform:translateX(3px)}
+.site-row .sr-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.site-row .sr-name{font-size:13px;font-weight:600;flex-shrink:0;width:80px}
+.site-row .sr-domain{font-size:11px;color:var(--text3);flex:1}
+.site-row .sr-arrow{font-size:12px;color:var(--text3);padding:4px 8px;border-radius:5px;background:rgba(255,255,255,.03);transition:all .2s;flex-shrink:0}
+.site-row:hover .sr-arrow{background:var(--accent);color:#fff}
+
+/* ═══ Coming Soon ═══ */
+.coming-soon{text-align:center;padding:60px 20px}
+.coming-soon .cs-icon{font-size:48px;margin-bottom:16px;opacity:.5}
+.coming-soon .cs-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.coming-soon .cs-desc{font-size:13px;color:var(--text2);line-height:1.7}
+
+/* 쇼핑몰 선택 */
+.site-selector{
+  max-width:680px;margin:0 auto 20px;padding:16px 18px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+}
+.ss-label{font-size:12px;color:var(--text2);font-weight:600;margin-bottom:12px;}
+.ss-label span{color:var(--accent);font-weight:700;}
+.ss-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.ss-chip{
+  display:flex;align-items:center;gap:6px;padding:6px 12px;
+  border-radius:20px;border:1px solid var(--border);background:var(--surface2);
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.ss-chip:hover{border-color:var(--accent);}
+.ss-chip input{display:none;}
+.ss-chip:has(input:checked){border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.06);}
+.ss-icon{font-size:14px;}
+.ss-name{font-size:12px;font-weight:600;}
+.ss-actions{display:flex;gap:8px;}
+.ss-btn{
+  padding:4px 12px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.ss-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+@media(max-width:700px){
+  .card-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .card-grid{grid-template-columns:1fr}
+  .menu-grid{flex-direction:column;align-items:center}
+  .menu-card{width:100%;max-width:280px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="app"></div>
+</div>
+
+<script>
+const S=[
+  {id:"shinsegaetv",n:"신세계쇼핑",d:"shinsegaetvshopping.com",i:"📺",c:"#C8102E",
+   u:"https://www.shinsegaetvshopping.com/goods-search/search?searchKeyword={kw}&trackSearchType=pc_normal"},
+  {id:"coupang",n:"쿠팡",d:"coupang.com",i:"🚀",c:"#E01E5A",
+   u:"https://www.coupang.com/np/search?component=&q={kw}"},
+  {id:"gmarket",n:"G마켓",d:"gmarket.co.kr",i:"🟢",c:"#00A651",
+   u:"https://www.gmarket.co.kr/n/search?keyword={kw}"},
+  {id:"ssg",n:"쓱닷컴",d:"ssg.com",i:"✨",c:"#FF5452",
+   u:"https://www.ssg.com/search.ssg?target=all&query={kw}"},
+  {id:"gsshop",n:"GS SHOP",d:"gsshop.com",i:"🟠",c:"#FF6B35",
+   u:"https://www.gsshop.com/shop/search/noResult.gs?tq={kw}&ab=df&revision=Y&lseq=390247"},
+  {id:"cjonstyle",n:"CJ온스타일",d:"cjonstyle.com",i:"🔵",c:"#0066FF",
+   u:"https://display.cjonstyle.com/p/search/searchAllList?k={kw}&searchType=ALL"},
+  {id:"hyundai",n:"현대홈쇼핑",d:"hmall.com",i:"🏠",c:"#8B6914",
+   u:"https://www.hmall.com/md/pde/search?gnbSearchYn=Y&requestPath=w&tab=all&searchTerm={kw}&searchType=normal"},
+  {id:"lotteon",n:"롯데온",d:"lotteon.com",i:"🔴",c:"#E60012",
+   u:"https://www.lotteon.com/search/search/search.ecn?render=search&platform=pc&q={kw}"},
+  {id:"kurly",n:"컬리",d:"kurly.com",i:"🟣",c:"#5F0080",
+   u:"https://www.kurly.com/search?sword={kw}&page=1"},
+  {id:"queenit",n:"퀸잇",d:"queenit.kr",i:"👑",c:"#D4467E",
+   u:"https://web.queenit.kr/search?prefilter=&keyword={kw}"},
+  {id:"halfclub",n:"하프클럽",d:"halfclub.com",i:"🏷️",c:"#FF2D55",
+   u:"https://www.halfclub.com/search/{kw}"},
+];
+
+let kw="";
+const $=id=>document.getElementById(id);
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function url(s,k){return s.u.replace("{kw}",encodeURIComponent(k))}
+
+// ═══════════════════════════
+// Landing
+// ═══════════════════════════
+function showLanding(){
+  $("app").innerHTML=`
+    <div class="landing">
+      <div class="menu-grid">
+        <div class="menu-card" onclick="goSearch()">
+          <div class="mc-icon" style="background:rgba(255,107,53,.1)">🔍</div>
+          <div class="mc-title">가격비교 검색</div>
+          <div class="mc-desc">각 쇼핑몰 검색 결과를<br>바로 열어서 비교</div>
+        </div>
+        <div class="menu-card" onclick="goCrawl()">
+          <div class="mc-icon" style="background:rgba(96,165,250,.1)">🤖</div>
+          <div class="mc-title">가격비교 크롤링</div>
+          <div class="mc-desc">크롤러가 자동으로<br>가격을 수집·비교</div>
+        </div>
+        <div class="menu-card" onclick="goBest()">
+          <div class="mc-icon" style="background:rgba(52,211,153,.1)">🏆</div>
+          <div class="mc-title">베스트 랭킹</div>
+          <div class="mc-desc">쇼핑몰별<br>인기상품 랭킹</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════
+// 1. 가격비교 검색 (card grid)
+// ═══════════════════════════
+function goSearch(){
+  kw="";
+  let h=`<a href="/" class="back-btn">← 홈</a>`;
+  h+=`<div class="sp-header">
+    <div class="sp-tag">Name Search</div>
+    <div class="sp-title">가격비교 <span>Light</span></div>
+    <div class="sp-sub">쇼핑몰을 선택하고 검색어를 입력하세요</div>
+  </div>`;
+  // 쇼핑몰 선택 체크박스
+  h+=`<div class="site-selector" id="site-selector">
+    <div class="ss-label">쇼핑몰 선택 <span id="ss-count">(${S.length}개 선택됨)</span></div>
+    <div class="ss-grid">
+      ${S.map(s=>`
+        <label class="ss-chip">
+          <input type="checkbox" class="ss-cb" value="${s.id}" checked onchange="updateCount()"/>
+          <span class="ss-icon" style="background:${s.c}18">${s.i}</span>
+          <span class="ss-name" style="color:${s.c}">${s.n}</span>
+        </label>`).join('')}
+    </div>
+    <div class="ss-actions">
+      <button class="ss-btn" onclick="selectAll(true)">전체 선택</button>
+      <button class="ss-btn" onclick="selectAll(false)">전체 해제</button>
+    </div>
+  </div>`;
+  h+=`<div class="sp-search"><input type="text" id="q" placeholder="상품명 입력 (예: 남독마이 망고)"><button onclick="doSearch()">검색</button></div>`;
+  h+=`<div id="searchResult"></div>`;
+  $("app").innerHTML=h;
+  $("q").addEventListener("keydown",e=>{if(e.key==="Enter")doSearch()});
+  $("q").focus();
+}
+
+function getSelected(){
+  const cbs = document.querySelectorAll(".ss-cb:checked");
+  const ids = new Set([...cbs].map(c=>c.value));
+  return S.filter(s=>ids.has(s.id));
+}
+function updateCount(){
+  const n = document.querySelectorAll(".ss-cb:checked").length;
+  const el = document.getElementById("ss-count");
+  if(el) el.textContent = `(${n}개 선택됨)`;
+}
+function selectAll(val){
+  document.querySelectorAll(".ss-cb").forEach(c=>c.checked=val);
+  updateCount();
+}
+function doSearch(){
+  const v=$("q").value.trim();
+  if(!v)return;
+  kw=v;
+  // 키워드 서버로 전송
+  fetch("/api/analytics/keyword", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({type:"light", keyword:kw})
+  }).catch(()=>{});
+  showSearchResults();
+}
+
+function openAll(){
+  const selected = getSelected();
+  selected.forEach((s,i)=>setTimeout(()=>window.open(url(s,kw),"_blank"),i*300));
+}
+
+function resetSearch(){
+  kw="";$("q").value="";$("searchResult").innerHTML="";$("q").focus();
+}
+
+function showSearchResults(){
+  const selected = getSelected();
+  if(!selected.length){ alert("쇼핑몰을 1개 이상 선택해주세요!"); return; }
+  let h=`<div class="sp-result-bar">
+    <div><div class="kw">"<em>${esc(kw)}</em>" 검색 결과</div><div class="sub">${selected.length}개 쇼핑몰에서 검색</div></div>
+    <button class="sp-reset" onclick="resetSearch()">초기화</button>
+  </div>`;
+  h+=`<div class="sp-tip"><span>💡</span>카드를 클릭하면 해당 쇼핑몰 검색 결과가 새 탭에서 열립니다</div>`;
+  h+=`<button class="sp-openall" onclick="openAll()">🚀 선택 쇼핑몰 한번에 열기 (${selected.length}개)</button>`;
+  h+=`<div class="card-grid">`;
+  selected.forEach(s=>{
+    h+=`<a class="site-card" href="${url(s,kw)}" target="_blank">
+      <div class="sc-icon" style="background:${s.c}15">${s.i}</div>
+      <div class="sc-info">
+        <div class="sc-name" style="color:${s.c}">${s.n}</div>
+        <div class="sc-domain">${s.d}</div>
+      </div>
+      <div class="sc-arrow">→</div>
+    </a>`;
+  });
+  h+=`</div>`;
+  $("searchResult").innerHTML=h;
+}
+
+// ═══════════════════════════
+// 2. 가격비교 크롤링 (iframe)
+// ═══════════════════════════
+function goCrawl(){
+  window.location.href = "http://localhost:5000";
+}
+
+// ═══════════════════════════
+// 3. 베스트 랭킹
+// ═══════════════════════════
+function goBest(){
+  window.location.href = "http://localhost:8080/dashboard";
+}
+
+goSearch();
+</script>
+</body>
+</html>

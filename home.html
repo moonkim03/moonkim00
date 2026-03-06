@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UPM — Universal Product Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --surface: #111318;
+      --border: #242830;
+      --border2: #2e3340;
+      --accent: #4f8ef7;
+      --gs: #f97316;
+      --cj: #a855f7;
+      --hyundai: #22d3a0;
+      --text: #e8eaf0;
+      --text2: #8b90a0;
+      --text3: #555a6a;
+      --mono: 'Noto Sans KR', sans-serif;
+      --sans: 'Noto Sans KR', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(79,142,247,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,142,247,.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 900px; height: 900px;
+      background: radial-gradient(ellipse, rgba(79,142,247,.06) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 48px;
+      padding: 40px 20px;
+    }
+
+    /* 로고 */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: fade-up .5s ease both;
+    }
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: #fff;
+      font-family: var(--sans);
+    }
+    .logo-name {
+      font-family: var(--sans);
+      font-size: 13px;
+      color: var(--text2);
+    }
+    .logo-name strong { color: var(--text); margin-right: 6px; }
+
+    /* 카드 영역 */
+    .cards {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fade-up .5s .1s ease both;
+    }
+
+    /* 큰 동그라미 카드 */
+    .card {
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1.5px solid var(--border2);
+      background: var(--surface);
+      transition: transform .28s cubic-bezier(.34,1.56,.64,1),
+                  box-shadow .28s ease,
+                  border-color .28s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: '';
+      position: absolute; inset: 0; border-radius: 50%;
+      opacity: 0;
+      transition: opacity .28s ease;
+    }
+    .card:hover { transform: translateY(-8px) scale(1.04); }
+    .card:hover::after { opacity: 1; }
+
+    /* 가격비교 */
+    .card-compare { border-color: rgba(79,142,247,.3); }
+    .card-compare::after { background: radial-gradient(ellipse at center, rgba(79,142,247,.1) 0%, transparent 70%); }
+    .card-compare:hover {
+      border-color: rgba(79,142,247,.7);
+      box-shadow: 0 20px 60px rgba(79,142,247,.18), 0 0 0 1px rgba(79,142,247,.2);
+    }
+    .card-compare .card-icon { color: var(--accent); }
+    .card-compare .card-label { color: var(--accent); }
+
+    /* 베스트랭킹 */
+    .card-ranking { border-color: rgba(249,115,22,.3); }
+
+    /* 가격비교 Light */
+    .card-light { border-color: rgba(34,211,160,.3); }
+    .card-light::after { background: radial-gradient(ellipse at center, rgba(34,211,160,.1) 0%, transparent 70%); }
+    .card-light:hover {
+      border-color: rgba(34,211,160,.7);
+      box-shadow: 0 20px 60px rgba(34,211,160,.18), 0 0 0 1px rgba(34,211,160,.2);
+    }
+    .card-light .card-icon { color: #22d3a0; }
+    .card-light .card-label { color: #22d3a0; }
+    .card-ranking::after { background: radial-gradient(ellipse at center, rgba(249,115,22,.1) 0%, transparent 70%); }
+    .card-ranking:hover {
+      border-color: rgba(249,115,22,.7);
+      box-shadow: 0 20px 60px rgba(249,115,22,.18), 0 0 0 1px rgba(249,115,22,.2);
+    }
+    .card-ranking .card-icon { color: var(--gs); }
+    .card-ranking .card-label { color: var(--gs); }
+
+    .card-icon { font-size: 44px; line-height: 1; }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .card-label {
+      font-family: var(--sans);
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      opacity: .7;
+    }
+    .card-desc {
+      font-size: 11.5px;
+      color: var(--text3);
+      text-align: center;
+      line-height: 1.6;
+      padding: 0 24px;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 560px) {
+      .cards { gap: 24px; }
+      .card { width: 140px; height: 140px; }
+      .card-icon { font-size: 32px; }
+      .card-title { font-size: 15px; }
+      .card-desc { font-size: 10px; padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div style="text-align:center;animation:fade-up .5s ease both;">
+    <div style="font-size:clamp(28px,5vw,52px);font-weight:900;letter-spacing:-0.03em;color:#e8eaf0;margin-bottom:8px;">AI 상품 모니터링</div>
+    <div style="font-size:13px;color:#555a6a;">by UX팀 김정문</div>
+  </div>
+
+  <div class="cards">
+
+    <!-- 1. 가격비교 Light -->
+    <a href="/price-search" class="card card-light">
+      <div class="card-icon">🔍</div>
+      <div class="card-title">가격비교 Light</div>
+      <div class="card-label">Name Search</div>
+      <div class="card-desc">여러 쇼핑몰에서<br>동일 키워드 검색</div>
+    </a>
+
+    <!-- 2. 가격비교 -->
+    <a href="/price-compare" class="card card-compare">
+      <div class="card-icon">⚖️</div>
+      <div class="card-title">가격비교</div>
+      <div class="card-label">Price Compare</div>
+      <div class="card-desc">상품명 검색으로<br>가격비교<br>쿠팡, G마켓, SSG 등</div>
+    </a>
+
+    <!-- 3. 베스트랭킹 -->
+    <a href="/dashboard" class="card card-ranking">
+      <div class="card-icon">🏆</div>
+      <div class="card-title">베스트랭킹</div>
+      <div class="card-label">Best Ranking</div>
+      <div class="card-desc">홈쇼핑 3사<br>베스트상품<br>GS, CJ, 현대</div>
+    </a>
+
+  </div>
+
+</div>
+
+  <!-- 하단 링크 -->
+  <div style="animation:fade-up .5s .3s ease both;opacity:0;animation-fill-mode:forwards;">
+    <a href="/analytics" style="font-size:11px;color:var(--text3);text-decoration:none;border:1px solid var(--border2);padding:5px 14px;border-radius:20px;transition:all .2s;"
+       onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'"
+       onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border2)'">
+      📊 사용 현황
+    </a>
+  </div>
+
+</div>
+
+</body>
+</html>

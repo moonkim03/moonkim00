@@ -1,1 +1,1340 @@
-text
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UPM — Universal Product Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --surface: #111318;
+      --surface2: #181c24;
+      --border: #242830;
+      --border2: #2e3340;
+      --accent: #4f8ef7;
+      --accent2: #7c5cfc;
+      --green: #22d3a0;
+      --red: #f7566a;
+      --yellow: #f5c842;
+      --text: #e8eaf0;
+      --text2: #8b90a0;
+      --text3: #555a6a;
+      --mono: 'DM Mono', monospace;
+      --sans: 'Pretendard', sans-serif;
+      --radius: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 14px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(79,142,247,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,142,247,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+      background: rgba(10,12,16,.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: .08em;
+      color: var(--text2);
+    }
+
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .logo strong { color: var(--text); font-weight: 500; }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text3);
+      transition: background .3s;
+    }
+    .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; }
+    .status-dot.error  { background: var(--red); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .layout {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+
+    .sidebar-section-title {
+      padding: 8px 20px 4px;
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+
+    .cat-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 20px;
+      cursor: pointer;
+      color: var(--text2);
+      font-size: 13px;
+      border-radius: 0;
+      transition: all .15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      position: relative;
+    }
+
+    .cat-btn::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    .cat-btn:hover { background: var(--surface); color: var(--text); }
+
+    .cat-btn.active {
+      background: rgba(79,142,247,.08);
+      color: var(--accent);
+    }
+    .cat-btn.active::before { opacity: 1; }
+
+    .cat-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── HEADER BAR ── */
+    .main-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .main-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .main-title h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .main-title p {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #6a9df8; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text2);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+    .btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
+
+    .btn-accent2 {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .btn-accent2:hover { opacity: .85; transform: translateY(-1px); }
+    .btn-accent2:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    /* ── STATS CARDS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-value.green { color: var(--green); }
+    .stat-value.red   { color: var(--red); }
+    .stat-value.yellow{ color: var(--yellow); }
+    .stat-value.blue  { color: var(--accent); }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: none;
+    }
+
+    .progress-wrap.visible { display: block; }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    .progress-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      transition: width .4s ease;
+      width: 0%;
+    }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+
+    .table-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .tag-blue { background: rgba(79,142,247,.15); color: var(--accent); border: 1px solid rgba(79,142,247,.25); }
+    .tag-green { background: rgba(34,211,160,.12); color: var(--green); border: 1px solid rgba(34,211,160,.2); }
+    .tag-red { background: rgba(247,86,106,.12); color: var(--red); border: 1px solid rgba(247,86,106,.2); }
+    .tag-yellow { background: rgba(245,200,66,.12); color: var(--yellow); border: 1px solid rgba(245,200,66,.2); }
+    .tag-gray { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+
+    .search-input {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: var(--sans);
+      font-size: 12px;
+      color: var(--text);
+      outline: none;
+      width: 200px;
+      transition: border-color .15s;
+    }
+    .search-input::placeholder { color: var(--text3); }
+    .search-input:focus { border-color: var(--accent); }
+
+    .filter-select {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: var(--sans);
+      font-size: 12px;
+      color: var(--text2);
+      outline: none;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      padding: 10px 16px;
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.01);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td { background: rgba(255,255,255,.04); }
+
+    .rank-num {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text3);
+      width: 36px;
+      text-align: center;
+    }
+    .rank-num.top3 { color: var(--yellow); font-size: 18px; }
+
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .product-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .product-thumb-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .product-info { display: flex; flex-direction: column; gap: 2px; }
+
+    .product-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.45; max-width: 480px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .product-link {
+      color: var(--accent);
+      font-size: 10px;
+      text-decoration: none;
+      font-family: var(--mono);
+    }
+    .product-link:hover { text-decoration: underline; }
+
+    .price-cell { font-family: var(--mono); font-size: 15px; color: var(--gs); font-weight: 700; white-space: nowrap; text-align: right; letter-spacing: -0.02em; }
+
+    .price-diff {
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .price-diff.cheaper { color: var(--green); }
+    .price-diff.expensive { color: var(--red); }
+    .price-diff.same { color: var(--text3); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: var(--text3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-icon { font-size: 40px; opacity: .4; }
+
+    .empty-title { font-size: 14px; font-weight: 500; color: var(--text2); }
+
+    .empty-desc { font-size: 12px; max-width: 300px; line-height: 1.6; }
+
+    /* ── TIMESTAMP ── */
+    .timestamp {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--text);
+      min-width: 240px;
+      animation: slide-in .2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.success { border-color: rgba(34,211,160,.3); }
+    .toast.error   { border-color: rgba(247,86,106,.3); }
+    .toast.info    { border-color: rgba(79,142,247,.3); }
+
+    @keyframes slide-in {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── UTILITY ── */
+    .flex { display: flex; }
+    .gap-8 { gap: 8px; }
+    .items-center { align-items: center; }
+    .hidden { display: none !important; }
+
+    /* ── NAV TABS ── */
+    .nav-tabs { display: flex; gap: 2px; }
+    .nav-tab {
+      padding: 6px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      text-decoration: none; color: var(--text3); border: 1px solid transparent; transition: all .15s;
+    }
+    .nav-tab:hover { color: var(--text2); }
+    .nav-tab.active-gs { background: rgba(249,115,22,.15); color: #f97316; border-color: rgba(249,115,22,.3); font-weight: 600; }
+    .nav-tab.active-cj { background: rgba(168,85,247,.15); color: #a855f7; border-color: rgba(168,85,247,.3); font-weight: 600; }
+    .nav-tab.active-hyundai { background: rgba(34,211,160,.15); color: #22d3a0; border-color: rgba(34,211,160,.3); font-weight: 600; }
+
+    /* ── CALENDAR ── *//* ── CALENDAR ── */
+    .cal-trigger {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 14px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border2); background: var(--surface);
+      color: var(--text2); font-size: 12px; font-family: var(--mono);
+      transition: all .15s; user-select: none; position: relative;
+    }
+    .cal-trigger:hover { border-color: var(--accent); color: var(--text); }
+    .cal-trigger .cal-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+    }
+
+    .cal-popup {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: 12px; padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      z-index: 500; min-width: 260px;
+      display: none;
+    }
+    .cal-popup.open { display: block; }
+
+    .cal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-month {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      font-family: var(--mono);
+    }
+    .cal-nav {
+      background: none; border: none; color: var(--text3);
+      cursor: pointer; font-size: 14px; padding: 2px 6px;
+      border-radius: 4px; transition: color .15s;
+    }
+    .cal-nav:hover { color: var(--text); }
+
+    .cal-weekdays {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 2px; margin-bottom: 4px;
+    }
+    .cal-weekday {
+      text-align: center; font-size: 10px; font-family: var(--mono);
+      color: var(--text3); padding: 4px 0;
+    }
+    .cal-weekday:first-child { color: #f7566a; }
+    .cal-weekday:last-child  { color: #4f8ef7; }
+
+    .cal-days {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    }
+    .cal-day {
+      aspect-ratio: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px;
+      border-radius: 6px; font-size: 12px; color: var(--text3);
+      cursor: default; position: relative;
+    }
+    .cal-day.has-data {
+      cursor: pointer; color: var(--text2);
+      background: var(--surface2);
+    }
+    .cal-day.has-data:hover { background: var(--border2); color: var(--text); }
+    .cal-day.selected {
+      background: var(--accent) !important;
+      color: #fff !important; font-weight: 600;
+    }
+    .cal-day.today { color: var(--accent); font-weight: 600; }
+    .cal-day.today.has-data { border: 1px solid var(--accent); }
+    .cal-day.empty { visibility: hidden; }
+    .cal-day .data-dot {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--accent); opacity: .8;
+    }
+    .cal-day.selected .data-dot { background: #fff; }
+    .cal-day.future { opacity: .25; cursor: default; }
+
+    .cal-legend {
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 12px; font-size: 10px; color: var(--text3);
+    }
+    .cal-legend-item { display: flex; align-items: center; gap: 4px; }
+    .cal-legend-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-mark">U</div>
+    <strong>UPM</strong>
+    <span>Universal Product Monitor</span>
+  </div>
+  <nav class="nav-tabs">
+    <a href="/" class="nav-tab active-gs">GS샵</a>
+    <a href="/cj" class="nav-tab">CJ온스타일</a>
+    <a href="/hyundai" class="nav-tab">현대홈쇼핑</a>
+    <div style="width:1px;background:var(--border2);margin:8px 4px;"></div>
+    <a href="/dashboard" class="nav-tab" style="color:var(--text3);">📊 베스트 대시보드</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">대기 중</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+      <button class="btn btn-ghost" id="btn-gs-manual" onclick="triggerGsCrawl()">
+        ⟳ GS샵 수동 갱신
+      </button>
+      <span id="gs-last-updated" style="font-family:var(--mono);font-size:10px;color:var(--text3);display:none;">
+        마지막 갱신: <span id="gs-last-updated-time"></span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section-title">카테고리 선택</div>
+    <div id="category-list">
+      <!-- JS로 동적 생성 -->
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <div class="main-header">
+      <div class="main-title">
+        <h1 id="current-category-title">카테고리를 선택하세요</h1>
+        <p id="gs-crawled-at" class="timestamp">GS샵 데이터 없음</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+              <!-- 캘린더 트리거 -->
+      <div style="position:relative;">
+        <div class="cal-trigger" id="cal-trigger" onclick="toggleCalendar()">
+          <span class="cal-dot"></span>
+          <span id="cal-selected-label">날짜 선택</span>
+          <span style="font-size:10px;opacity:.5;">▼</span>
+        </div>
+        <div class="cal-popup" id="cal-popup">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="calNav(-1)">◀</button>
+            <span class="cal-month" id="cal-month-label"></span>
+            <button class="cal-nav" onclick="calNav(1)">▶</button>
+          </div>
+          <div class="cal-weekdays">
+            <div class="cal-weekday">일</div><div class="cal-weekday">월</div>
+            <div class="cal-weekday">화</div><div class="cal-weekday">수</div>
+            <div class="cal-weekday">목</div><div class="cal-weekday">금</div>
+            <div class="cal-weekday">토</div>
+          </div>
+          <div class="cal-days" id="cal-days"></div>
+          <div class="cal-legend">
+            <div class="cal-legend-item"><div class="cal-legend-dot"></div>데이터 있음</div>
+            <div class="cal-legend-item" style="color:var(--text3);">■ 선택됨</div>
+          </div>
+        </div>
+      </div>
+        <div class="action-bar">
+          <button class="btn btn-accent2" id="btn-compare" onclick="startCompare()" disabled>
+            🔍 신세계TV 조회하기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">GS샵 상품수</div>
+        <div class="stat-value blue" id="stat-total">—</div>
+        <div class="stat-sub">현재 카테고리</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">신세계TV 보유</div>
+        <div class="stat-value green" id="stat-found">—</div>
+        <div class="stat-sub">보유율 <span id="stat-found-pct">—</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">우리몰이 저렴</div>
+        <div class="stat-value green" id="stat-cheaper">—</div>
+        <div class="stat-sub">5% 이상 차이</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">우리몰이 비쌈</div>
+        <div class="stat-value red" id="stat-expensive">—</div>
+        <div class="stat-sub">5% 이상 차이</div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-info">
+        <span id="progress-msg">신세계TV 상품 비교 조회 중...</span>
+        <span id="progress-count" class="timestamp">0 / 0</span>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="table-toolbar-left">
+          <span class="table-title">베스트 랭킹 비교</span>
+          <span id="compare-timestamp" class="timestamp"></span>
+        </div>
+        <div class="flex gap-8 items-center">
+          <input type="text" class="search-input" placeholder="상품명 검색..." oninput="filterTable(this.value)" />
+          <select class="filter-select" onchange="filterByStatus(this.value)">
+            <option value="">전체 상태</option>
+            <option value="미보유">미보유</option>
+            <option value="우리몰_저렴">우리몰 저렴</option>
+            <option value="우리몰_비쌈">우리몰 비쌈</option>
+            <option value="동일가격대">동일가격대</option>
+            <option value="보유(가격미확인)">보유(가격미확인)</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="table-container">
+        <div class="empty-state">
+          <div class="empty-icon">📦</div>
+          <div class="empty-title">왼쪽 카테고리를 선택하세요</div>
+          <div class="empty-desc">GS샵 베스트랭킹 상품을 불러온 후 '신세계TV 조회하기' 버튼을 클릭하면 비교 분석이 시작됩니다.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script>
+
+// ── 캘린더 ──────────────────────────────────────
+let calViewYear = new Date().getFullYear();
+let calViewMonth = new Date().getMonth();
+
+function toggleCalendar() {
+  const popup = document.getElementById('cal-popup');
+  popup.classList.toggle('open');
+  if (popup.classList.contains('open')) renderCalendar();
+}
+
+document.addEventListener('click', (e) => {
+  const trigger = document.getElementById('cal-trigger');
+  const popup = document.getElementById('cal-popup');
+  if (trigger && popup && !trigger.contains(e.target) && !popup.contains(e.target)) {
+    popup.classList.remove('open');
+  }
+});
+
+function calNav(dir) {
+  calViewMonth += dir;
+  if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+  if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const label = document.getElementById('cal-month-label');
+  if (!label) return;
+  label.textContent = `${calViewYear}년 ${calViewMonth + 1}월`;
+  const container = document.getElementById('cal-days');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+  const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+  let html = '';
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const mm = String(calViewMonth + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    const dateStr = `${calViewYear}-${mm}-${dd}`;
+    const hasData = availableDates.includes(dateStr);
+    const isSelected = dateStr === selectedDate;
+    const isToday = dateStr === todayStr;
+    const isFuture = dateStr > todayStr;
+    let cls = 'cal-day';
+    if (isFuture) cls += ' future';
+    else if (hasData) cls += ' has-data';
+    if (isSelected) cls += ' selected';
+    if (isToday) cls += ' today';
+    const dot = hasData && !isSelected ? '<div class="data-dot"></div>' : '';
+    const click = hasData && !isFuture ? `onclick="pickDate('${dateStr}')"` : '';
+    html += `<div class="${cls}" ${click}>${d}${dot}</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function pickDate(dateStr) {
+  document.getElementById('cal-popup').classList.remove('open');
+  const d = new Date(dateStr);
+  const DAYS = ['일','월','화','수','목','금','토'];
+  document.getElementById('cal-selected-label').textContent =
+    `${d.getMonth()+1}/${d.getDate()}(${DAYS[d.getDay()]})`;
+  selectDate(dateStr);
+}
+
+function renderDateChips() { renderCalendar(); }
+
+// ── STATE ──────────────────────────────────────
+let gsData = null;
+let compareResult = null;
+let currentCategoryIdx = null;
+let currentProducts = [];
+let compareResults = [];
+let statusPollInterval = null;
+let filterText = '';
+let filterStatus = '';
+
+// ── INIT ──────────────────────────────────────
+async function init() {
+  await loadAvailableDates();
+  renderDateChips();
+  // 최신 날짜 자동 선택
+  if (availableDates.length > 0) {
+    selectedDate = availableDates[0];
+    renderDateChips();
+  }
+  await loadGsData(selectedDate);
+  renderCategoryList();
+  startStatusPoll();
+}
+
+// ── GS SHOP DATA ──────────────────────────────
+// ── 날짜 관련 ──────────────────────────────────────
+let availableDates = [];
+let selectedDate = null;
+
+async function loadAvailableDates() {
+  try {
+    const res = await fetch('/api/gsshop/dates');
+    availableDates = await res.json();
+  } catch(e) { availableDates = []; }
+}
+
+function renderDateChips() {
+  renderCalendar();
+}
+
+async function selectDate(dateStr) {
+  selectedDate = dateStr;
+  renderDateChips();
+  await loadGsData(dateStr);
+  renderCategoryList();
+  // 카테고리 초기화
+  if (currentCategoryIdx !== null && gsData && gsData.categories && gsData.categories[currentCategoryIdx]) {
+    selectCategory(currentCategoryIdx);
+  }
+}
+
+async function loadGsData(dateStr) {
+  try {
+    const url = dateStr ? `/api/gsshop/data?date=${dateStr}` : '/api/gsshop/data';
+    const res = await fetch(url);
+    gsData = await res.json();
+    if (gsData.crawled_at) {
+      document.getElementById('gs-crawled-at').textContent =
+        `GS샵 기준: ${gsData.crawled_at} · 매일 08:00 자동 갱신`;
+      document.getElementById('gs-last-updated-time').textContent = gsData.crawled_at;
+      document.getElementById('gs-last-updated').style.display = 'block';
+    } else {
+      document.getElementById('gs-crawled-at').textContent = 'GS샵 데이터 없음 — 우상단 [GS샵 수동 갱신] 클릭';
+      document.getElementById('gs-last-updated').style.display = 'none';
+    }
+    renderCategoryList();
+  } catch (e) {
+    showToast('GS샵 데이터 로드 실패', 'error');
+  }
+}
+
+function renderCategoryList() {
+  const container = document.getElementById('category-list');
+  if (!gsData || !gsData.categories || gsData.categories.length === 0) {
+    container.innerHTML = `<div style="padding:20px;font-size:12px;color:var(--text3);text-align:center;">
+      데이터 없음<br><small>GS샵 수동 갱신을 눌러주세요</small></div>`;
+    return;
+  }
+  container.innerHTML = gsData.categories.map((cat, idx) => `
+    <button class="cat-btn ${idx === currentCategoryIdx ? 'active' : ''}"
+            onclick="selectCategory(${idx})">
+      <span>${cat.category_name}</span>
+      <span class="cat-count">${cat.products ? cat.products.length : 0}</span>
+    </button>
+  `).join('');
+}
+
+// 카테고리별 조회 결과 캐시
+let compareCacheByCategory = {};
+
+function selectCategory(idx) {
+  currentCategoryIdx = idx;
+  const cat = gsData.categories[idx];
+  currentProducts = cat.products || [];
+
+  // 이미 조회한 카테고리면 캐시에서 불러오기
+  if (compareCacheByCategory[idx]) {
+    compareResults = compareCacheByCategory[idx];
+  } else {
+    compareResults = [];
+  }
+
+  document.getElementById('current-category-title').textContent = cat.category_name + ' 베스트랭킹';
+  document.getElementById('btn-compare').disabled = currentProducts.length === 0;
+
+  document.querySelectorAll('.cat-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+
+  const found = compareResults.filter(r => r.shinsegae && r.shinsegae.found).length;
+  const cheaper = compareResults.filter(r => r.comparison && r.comparison.status === '우리몰_저렴').length;
+  const expensive = compareResults.filter(r => r.comparison && r.comparison.status === '우리몰_비쌈').length;
+  updateStats(currentProducts.length, found, cheaper, expensive);
+  renderTable(currentProducts, compareResults);
+
+  // 조회 시간 표시
+  if (compareResults.length > 0 && compareCacheByCategory[idx + '_time']) {
+    document.getElementById('compare-timestamp').textContent =
+      `신세계TV 조회 : ${compareCacheByCategory[idx + '_time']}`;
+  } else {
+    document.getElementById('compare-timestamp').textContent = '';
+  }
+}
+
+// ── STATS ──────────────────────────────────────
+function updateStats(total, found, cheaper, expensive) {
+  document.getElementById('stat-total').textContent = total || '—';
+  document.getElementById('stat-found').textContent = found !== null ? found : '—';
+  document.getElementById('stat-found-pct').textContent =
+    total && found !== null ? `${Math.round((found/total)*100)}%` : '—';
+  document.getElementById('stat-cheaper').textContent = cheaper !== null ? cheaper : '—';
+  document.getElementById('stat-expensive').textContent = expensive !== null ? expensive : '—';
+}
+
+// ── TABLE RENDER ──────────────────────────────
+function renderTable(gsProducts, compareData) {
+  const container = document.getElementById('table-container');
+
+  if (!gsProducts || gsProducts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">상품 데이터가 없습니다</div>
+        <div class="empty-desc">GS샵 수동 갱신을 통해 데이터를 먼저 수집하세요.</div>
+      </div>`;
+    return;
+  }
+
+  const compareMap = {};
+  compareData.forEach(r => { compareMap[r.rank] = r; });
+
+  const rows = gsProducts
+    .filter(p => {
+      if (filterText && !p.name.toLowerCase().includes(filterText.toLowerCase())) return false;
+      if (filterStatus) {
+        const r = compareMap[p.rank];
+        if (!r) return filterStatus === '';
+        if (r.comparison.status !== filterStatus) return false;
+      }
+      return true;
+    })
+    .map(p => {
+      const r = compareMap[p.rank];
+      const hasCompare = !!r;
+      const ss = hasCompare ? r.shinsegae : null;
+      const comp = hasCompare ? r.comparison : null;
+
+      const rankClass = parseInt(p.rank) <= 3 ? 'top3' : '';
+      const rankLabel = parseInt(p.rank) <= 3
+        ? ['🥇','🥈','🥉'][parseInt(p.rank)-1]
+        : p.rank;
+
+      const statusTag = hasCompare ? getStatusTag(comp.status) : '<span class="tag tag-gray">미조회</span>';
+
+      const ssCell = !hasCompare
+        ? '<td>—</td><td>—</td>'
+        : ss.found
+          ? `<td>
+               <div class="product-cell">
+                 ${ss.img ? `<img class="product-thumb" src="${ss.img}" onerror="this.style.display='none'" />` : '<div class="product-thumb-placeholder">🛍️</div>'}
+                 <div class="product-info">
+                   <div class="product-name">${ss.name || '—'}</div>
+                   ${ss.link ? `<a class="product-link" href="${ss.link}" target="_blank">↗ 보기</a>` : ''}
+                 </div>
+               </div>
+             </td>
+             <td class="price-cell">${ss.price || '—'}</td>`
+          : `<td><span style="color:var(--text3);font-size:12px;">미보유</span></td><td>—</td>`;
+
+      const diffCell = !hasCompare || !comp.price_diff_pct
+        ? '<td>—</td>'
+        : `<td>
+             <div class="price-diff ${comp.price_diff_pct < -5 ? 'cheaper' : comp.price_diff_pct > 5 ? 'expensive' : 'same'}">
+               ${comp.price_diff_pct > 0 ? '+' : ''}${comp.price_diff_pct}%
+               ${comp.price_diff !== null ? `<br><small style="opacity:.6">${comp.price_diff > 0 ? '+' : ''}${comp.price_diff.toLocaleString()}원</small>` : ''}
+             </div>
+           </td>`;
+
+      return `
+        <tr>
+          <td><div class="rank-num ${rankClass}">${rankLabel}</div></td>
+          <td>
+            <div class="product-cell">
+              ${p.img ? `<img class="product-thumb" src="${p.img}" onerror="this.style.display='none'" />` : '<div class="product-thumb-placeholder">🏷️</div>'}
+              <div class="product-info">
+                <div class="product-name">${p.name}</div>
+                ${p.link ? `<a class="product-link" href="${p.link}" target="_blank">↗ GS샵 보기</a>` : ''}
+              </div>
+            </div>
+          </td>
+          <td class="price-cell">${p.price || '—'}</td>
+          ${ssCell}
+          ${diffCell}
+          <td>${statusTag}</td>
+        </tr>`;
+    }).join('');
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>순위</th>
+          <th>GS샵 상품</th>
+          <th>GS샵 가격</th>
+          <th>신세계TV 상품</th>
+          <th>신세계TV 가격</th>
+          <th>가격차이</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">검색 결과 없음</td></tr>'}</tbody>
+    </table>`;
+}
+
+function getStatusTag(status) {
+  const map = {
+    '미보유':          '<span class="tag tag-red">미보유</span>',
+    '우리몰_저렴':     '<span class="tag tag-green">우리몰↓저렴</span>',
+    '우리몰_비쌈':     '<span class="tag tag-yellow">우리몰↑비쌈</span>',
+    '동일가격대':      '<span class="tag tag-blue">동일가격대</span>',
+    '보유(가격미확인)':'<span class="tag tag-gray">가격미확인</span>',
+  };
+  return map[status] || `<span class="tag tag-gray">${status}</span>`;
+}
+
+// ── FILTER ────────────────────────────────────
+function filterTable(val) {
+  filterText = val;
+  const compareMap = {};
+  compareResults.forEach(r => { compareMap[r.rank] = r; });
+  renderTable(currentProducts, compareResults);
+}
+
+function filterByStatus(val) {
+  filterStatus = val;
+  renderTable(currentProducts, compareResults);
+}
+
+// ── COMPARE ───────────────────────────────────
+async function startCompare() {
+  if (!currentProducts.length) return showToast('카테고리를 먼저 선택하세요', 'error');
+
+  const btn = document.getElementById('btn-compare');
+  btn.disabled = true;
+
+  const cat = gsData.categories[currentCategoryIdx];
+
+  showToast('신세계TV 비교 조회를 시작합니다...', 'info');
+
+  try {
+    const res = await fetch('/api/compare', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        category_name: cat.category_name,
+        products: currentProducts
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      showToast(data.message, 'error');
+      btn.disabled = false;
+    }
+    // 상태는 pollStatus()에서 추적
+  } catch(e) {
+    showToast('서버 연결 실패', 'error');
+    btn.disabled = false;
+  }
+}
+
+// ── GS MANUAL CRAWL ───────────────────────────
+async function triggerGsCrawl() {
+  const btn = document.getElementById('btn-gs-manual');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> 갱신 중...';
+  showToast('GS샵 크롤링을 시작합니다...', 'info');
+
+  try {
+    const res = await fetch('/api/gsshop/crawl', {method: 'POST'});
+    const data = await res.json();
+    if (!data.success) {
+      showToast(data.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '⟳ GS샵 수동 갱신';
+    }
+  } catch(e) {
+    showToast('서버 연결 실패', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '⟳ GS샵 수동 갱신';
+  }
+}
+
+// ── STATUS POLLING ────────────────────────────
+function startStatusPoll() {
+  statusPollInterval = setInterval(pollStatus, 1500);
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const s = await res.json();
+
+    const dot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const progressWrap = document.getElementById('progress-wrap');
+
+    // GS SHOP 크롤링 중
+    if (s.gsshop_crawling) {
+      dot.className = 'status-dot active';
+      statusText.textContent = 'GS샵 크롤링 중...';
+      document.getElementById('btn-gs-manual').disabled = true;
+    }
+    // 신세계 비교 중
+    else if (s.shinsegae_comparing) {
+      dot.className = 'status-dot active';
+      statusText.textContent = s.message || '신세계TV 조회 중...';
+      progressWrap.classList.add('visible');
+
+      const pct = s.total > 0 ? Math.round((s.progress / s.total) * 100) : 0;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-msg').textContent = s.message || '';
+      document.getElementById('progress-count').textContent = `${s.progress} / ${s.total}`;
+    }
+    // 완료 상태
+    else {
+      dot.className = 'status-dot';
+      statusText.textContent = '대기 중';
+      progressWrap.classList.remove('visible');
+      document.getElementById('btn-gs-manual').disabled = false;
+      document.getElementById('btn-gs-manual').innerHTML = '⟳ GS샵 수동 갱신';
+
+      // 완료 후 데이터 새로고침
+      if (prevStatus.gsshop_crawling) {
+        await loadAvailableDates();
+        const today = new Date().toISOString().slice(0, 10);
+        selectedDate = availableDates.includes(today) ? today : (availableDates[0] || null);
+        renderDateChips();
+        await loadGsData(selectedDate);
+        showToast('GS샵 크롤링 완료! 데이터가 갱신되었습니다.', 'success');
+      }
+      if (prevStatus.shinsegae_comparing) {
+        await loadCompareResult();
+        document.getElementById('btn-compare').disabled = false;
+        showToast('신세계TV 비교 조회 완료!', 'success');
+      }
+    }
+
+    prevStatus = { ...s };
+  } catch(e) {
+    document.getElementById('status-dot').className = 'status-dot error';
+    document.getElementById('status-text').textContent = '서버 연결 오류';
+  }
+}
+
+let prevStatus = { gsshop_crawling: false, shinsegae_comparing: false };
+
+async function loadCompareResult() {
+  try {
+    const res = await fetch('/api/compare/result');
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) return;
+
+    compareResults = data.results;
+
+    // 카테고리별 캐시에 저장
+    compareCacheByCategory[currentCategoryIdx] = compareResults;
+    if (data.compared_at) {
+      compareCacheByCategory[currentCategoryIdx + '_time'] = data.compared_at;
+    }
+
+    const found = compareResults.filter(r => r.shinsegae.found).length;
+    const cheaper = compareResults.filter(r => r.comparison.status === '우리몰_저렴').length;
+    const expensive = compareResults.filter(r => r.comparison.status === '우리몰_비쌈').length;
+
+    updateStats(currentProducts.length, found, cheaper, expensive);
+    renderTable(currentProducts, compareResults);
+
+    if (data.compared_at) {
+      document.getElementById('compare-timestamp').textContent = `신세계TV 조회: ${data.compared_at}`;
+    }
+  } catch(e) {
+    showToast('비교 결과 로드 실패', 'error');
+  }
+}
+
+// ── TOAST ─────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.remove(); }, 3500);
+}
+
+// ── START ──────────────────────────────────────
+init();
+</script>
+</body>
+</html>

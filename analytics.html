@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>사용 현황 — AI 상품 모니터링</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0a0c10; --surface:#111318; --surface2:#1a1c24;
+      --border:#242830; --border2:#2e3340;
+      --accent:#4f8ef7; --gs:#f97316; --cj:#a855f7; --hyundai:#22d3a0;
+      --text:#e8eaf0; --text2:#8b90a0; --text3:#555a6a;
+      --red:#f7566a; --yellow:#fbbf24;
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* 헤더 */
+    .header {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:0 24px; height:52px; display:flex; align-items:center; gap:16px;
+      position:sticky; top:0; z-index:100;
+    }
+    .header a { color:var(--text2); text-decoration:none; font-size:12px; }
+    .header a:hover { color:var(--accent); }
+    .header-title { font-size:14px; font-weight:700; color:var(--text); }
+
+    .wrap { max-width:1100px; margin:0 auto; padding:28px 20px 60px; }
+
+    /* ── 날짜 선택 ── */
+    .date-bar { display:flex; align-items:center; gap:6px; margin-bottom:24px; flex-wrap:wrap; }
+
+    /* 트리거 버튼 */
+    .date-btn-trigger {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:8px 14px; border-radius:8px; font-size:13px; font-weight:500;
+      border:1px solid var(--border2); background:var(--surface2); color:var(--text);
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .date-btn-trigger:hover { border-color:rgba(255,255,255,.15); }
+    .date-btn-trigger.open { border-color:var(--accent); color:var(--accent); }
+
+    /* 퀵 버튼 */
+    .quick-btn {
+      padding:7px 13px; border-radius:7px; font-size:12px; font-weight:500;
+      border:1px solid var(--border); background:var(--surface2); color:var(--text3);
+      cursor:pointer; transition:all .12s;
+    }
+    .quick-btn:hover { color:var(--text2); border-color:var(--border2); }
+    .quick-btn.active {
+      background:#2a3655; border-color:#3d5a9e;
+      color:#7eb3ff; font-weight:600;
+    }
+
+    /* 캘린더 팝업 */
+    .cal-popup-wrap { position:relative; }
+    .cal-popup {
+      display:none; position:absolute; top:calc(100% + 6px); left:0;
+      background:#13151e; border:1px solid #2a2f3e;
+      border-radius:12px; padding:14px 16px; z-index:300;
+      box-shadow:0 16px 48px rgba(0,0,0,.8); width:224px;
+    }
+    .cal-popup.open { display:block; }
+
+    /* 캘린더 내부 */
+    .cal-nav-row { display:flex; align-items:center; margin-bottom:10px; }
+    .cal-nav-btn {
+      background:none; border:none; color:var(--text3);
+      cursor:pointer; padding:2px 8px; font-size:13px; border-radius:4px; transition:.12s;
+    }
+    .cal-nav-btn:hover { color:var(--text); background:var(--surface2); }
+    .cal-month-label { flex:1; text-align:center; font-size:12px; font-weight:700; color:var(--text); }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; }
+    .cal-weekday { text-align:center; font-size:9px; color:var(--text3); padding:3px 0 6px; font-weight:600; }
+    .cal-day {
+      text-align:center; font-size:11px; padding:0; height:28px; border-radius:50%;
+      cursor:pointer; transition:background .1s; color:var(--text3);
+      display:flex; align-items:center; justify-content:center; position:relative;
+    }
+    .cal-day:hover:not(.cal-empty):not(.cal-future) { background:var(--surface2); color:var(--text); }
+    .cal-empty { visibility:hidden; pointer-events:none; }
+    .cal-future { opacity:.25; cursor:not-allowed; }
+    .cal-has-data { color:var(--text2); }
+    .cal-has-data::after {
+      content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%);
+      width:3px; height:3px; border-radius:50%; background:var(--accent); opacity:.6;
+    }
+    .cal-selected { background:var(--accent) !important; color:#fff !important; font-weight:700; border-radius:50% !important; }
+    .cal-range-start { background:var(--accent) !important; color:#fff !important; font-weight:700; border-radius:50% 0 0 50% !important; }
+    .cal-range-end   { background:var(--accent) !important; color:#fff !important; font-weight:700; border-radius:0 50% 50% 0 !important; }
+    .cal-in-range    { background:rgba(79,142,247,.15); color:var(--accent); border-radius:0; }
+
+    /* 섹션 */
+    .section { margin-bottom:32px; }
+    .section-title { font-size:13px; font-weight:700; color:var(--text2); margin-bottom:12px; text-transform:uppercase; letter-spacing:.06em; }
+
+    /* 스탯 카드 */
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+    .stat-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:16px 18px;
+    }
+    .stat-label { font-size:11px; color:var(--text3); margin-bottom:6px; }
+    .stat-value { font-size:28px; font-weight:900; letter-spacing:-0.03em; }
+    .stat-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+
+    /* 페이지별 방문 테이블 */
+    .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    table { width:100%; border-collapse:collapse; }
+    th { padding:10px 16px; font-size:11px; font-weight:600; color:var(--text3); text-align:left; background:var(--surface2); border-bottom:1px solid var(--border); text-transform:uppercase; letter-spacing:.05em; }
+    td { padding:11px 16px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.04); }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(255,255,255,.02); }
+
+    /* 바 차트 */
+    .bar-wrap { display:flex; align-items:center; gap:10px; }
+    .bar-track { flex:1; background:var(--surface2); border-radius:4px; height:8px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; transition:width .4s ease; }
+    .bar-val { font-size:12px; font-weight:700; min-width:30px; text-align:right; }
+
+    /* 키워드 */
+    .kw-grid { display:flex; flex-wrap:wrap; gap:8px; }
+    .kw-chip {
+      display:flex; align-items:center; gap:6px;
+      padding:6px 12px; border-radius:20px;
+      background:var(--surface); border:1px solid var(--border);
+      font-size:12px;
+    }
+    .kw-chip .kw-text { color:var(--text); font-weight:500; }
+    .kw-chip .kw-cnt { color:var(--accent); font-weight:700; font-size:11px; }
+
+    .kw-list { display:flex; flex-direction:column; gap:4px; }
+    .kw-row {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 14px; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; font-size:12px;
+    }
+    .kw-row .kw-time { color:var(--text3); font-size:11px; min-width:50px; }
+    .kw-row .kw-text { color:var(--text); flex:1; }
+
+    .empty { text-align:center; padding:40px; color:var(--text3); font-size:13px; }
+
+    .page-badge {
+      display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a href="/">← 홈</a>
+  <div class="header-title">📊 사용 현황</div>
+</div>
+
+<div class="wrap">
+
+  <!-- 날짜 선택 바 -->
+  <div class="date-bar">
+    <div class="cal-popup-wrap">
+      <button class="date-btn-trigger" id="cal-trigger" onclick="toggleCal()">
+        <span class="trigger-icon">📅</span>
+        <span id="cal-label">오늘</span>
+        <span class="trigger-arrow">▼</span>
+      </button>
+      <div class="cal-popup" id="cal-popup">
+        <div class="cal-nav-row">
+          <button class="cal-nav-btn" onclick="calMove(-1)">◀</button>
+          <span class="cal-month-label" id="cal-month-label"></span>
+          <button class="cal-nav-btn" onclick="calMove(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+    <button class="quick-btn active" id="q0" onclick="quickSelect(0,this)">오늘</button>
+    <button class="quick-btn" id="q6" onclick="quickSelect(6,this)">최근 7일</button>
+    <button class="quick-btn" id="q13" onclick="quickSelect(13,this)">최근 14일</button>
+    <button class="quick-btn" id="q29" onclick="quickSelect(29,this)">최근 30일</button>
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="section">
+    <div class="section-title">요약</div>
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat-card"><div class="stat-label">전체 방문수</div><div class="stat-value" id="s-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">유니크 유저</div><div class="stat-value" id="s-unique">—</div><div class="stat-sub">IP 기반</div></div>
+      <div class="stat-card"><div class="stat-label">가격비교Light 검색</div><div class="stat-value" id="s-light">—</div><div class="stat-sub">키워드 수</div></div>
+      <div class="stat-card"><div class="stat-label">가격비교 검색</div><div class="stat-value" id="s-compare">—</div><div class="stat-sub">검색 횟수</div></div>
+    </div>
+  </div>
+
+  <!-- 페이지별 방문 -->
+  <div class="section">
+    <div class="section-title">페이지별 방문수</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>페이지</th><th>방문수</th><th>유니크 유저</th><th>비율</th></tr></thead>
+        <tbody id="page-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 두 컬럼 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px;">
+
+    <!-- 가격비교 Light 키워드 -->
+    <div class="section">
+      <div class="section-title">🔍 가격비교 Light 검색 키워드</div>
+      <div id="light-keywords"><div class="empty">데이터 없음</div></div>
+    </div>
+
+    <!-- 가격비교 Compare 키워드 -->
+    <div class="section">
+      <div class="section-title">⚖️ 가격비교 검색 기록</div>
+      <div id="compare-keywords"><div class="empty">데이터 없음</div></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const PAGE_LABELS = {
+  home:"🏠 홈", gs:"🟠 GS샵", cj:"🔵 CJ온스타일",
+  hyundai:"🟢 현대홈쇼핑", dashboard:"📊 베스트랭킹",
+  price_search:"🔍 가격비교 Light"
+};
+const PAGE_COLORS = {
+  home:"#4f8ef7", gs:"#f97316", cj:"#a855f7",
+  hyundai:"#22d3a0", dashboard:"#fbbf24", price_search:"#22d3a0"
+};
+
+let allData = {};
+let availDates = new Set();
+let rangeStart = null;
+let rangeEnd   = null;
+let calOffset  = 0;
+let calOpen    = false;
+
+async function init() {
+  const res = await fetch("/api/analytics/data");
+  allData = await res.json();
+  availDates = new Set(Object.keys(allData));
+  // 디폴트: 오늘
+  rangeStart = fmtDate(new Date());
+  rangeEnd = null;
+  renderCal();
+  updateLabel();
+  renderAll();
+  // 외부 클릭 시 닫기
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".cal-popup-wrap")) closeCal();
+  });
+}
+
+function fmtDate(d) {
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function toggleCal() {
+  calOpen = !calOpen;
+  document.getElementById("cal-popup").classList.toggle("open", calOpen);
+  document.getElementById("cal-trigger").classList.toggle("open", calOpen);
+  if (calOpen) renderCal();
+}
+
+function closeCal() {
+  calOpen = false;
+  document.getElementById("cal-popup").classList.remove("open");
+  document.getElementById("cal-trigger").classList.remove("open");
+}
+
+function calMove(n) { calOffset += n; renderCal(); }
+
+function renderCal() {
+  const base = new Date();
+  base.setMonth(base.getMonth() + calOffset);
+  const y = base.getFullYear(), mo = base.getMonth();
+  const firstDay = new Date(y, mo, 1).getDay();
+  const lastDate = new Date(y, mo+1, 0).getDate();
+  const todayStr = fmtDate(new Date());
+  const lo = rangeStart && rangeEnd ? (rangeStart<rangeEnd?rangeStart:rangeEnd) : rangeStart;
+  const hi = rangeStart && rangeEnd ? (rangeStart<rangeEnd?rangeEnd:rangeStart) : rangeStart;
+
+  document.getElementById("cal-month-label").textContent = `${y}년 ${mo+1}월`;
+
+  let cells = ["일","월","화","수","목","금","토"].map(n=>`<div class="cal-weekday">${n}</div>`).join("");
+  for (let i=0;i<firstDay;i++) cells += `<div class="cal-day cal-empty"></div>`;
+  for (let d=1;d<=lastDate;d++) {
+    const ds = fmtDate(new Date(y,mo,d));
+    const future = ds > todayStr;
+    let cls = "cal-day";
+    if (future) cls += " cal-future";
+    else if (availDates.has(ds)) cls += " cal-has-data";
+    if (!future && lo && hi) {
+      if (ds===lo && ds===hi) cls += " cal-selected";
+      else if (ds===lo) cls += " cal-range-start";
+      else if (ds===hi) cls += " cal-range-end";
+      else if (ds>lo && ds<hi) cls += " cal-in-range";
+    } else if (!future && ds===rangeStart && !rangeEnd) {
+      cls += " cal-selected";
+    }
+    const click = future ? "" : `onclick="clickDay('${ds}')"`;
+    cells += `<div class="${cls}" ${click}>${d}</div>`;
+  }
+  document.getElementById("cal-grid").innerHTML = cells;
+}
+
+function clickDay(ds) {
+  // 퀵버튼 active 해제
+  ["q0","q6","q13","q29"].forEach(id => document.getElementById(id).classList.remove("active"));
+
+  if (!rangeStart || (rangeStart && rangeEnd)) {
+    rangeStart = ds; rangeEnd = null;
+  } else {
+    if (ds === rangeStart) {
+      rangeEnd = null;
+    } else {
+      const lo = rangeStart<ds ? rangeStart : ds;
+      const hi = rangeStart<ds ? ds : rangeStart;
+      rangeStart = lo; rangeEnd = hi;
+      closeCal();
+    }
+  }
+  renderCal();
+  updateLabel();
+  renderAll();
+}
+
+function quickSelect(days, btn) {
+  ["q0","q6","q13","q29"].forEach(id => document.getElementById(id).classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - days);
+  rangeStart = fmtDate(start);
+  rangeEnd = days === 0 ? null : fmtDate(today);
+  calOffset = 0;
+  renderCal();
+  updateLabel();
+  renderAll();
+}
+
+function updateLabel() {
+  const el = document.getElementById("cal-label");
+  if (!rangeStart) { el.textContent = "날짜를 선택하세요"; return; }
+  if (!rangeEnd || rangeStart === rangeEnd) { el.textContent = rangeStart; return; }
+  const lo = rangeStart<rangeEnd?rangeStart:rangeEnd;
+  const hi = rangeStart<rangeEnd?rangeEnd:rangeStart;
+  const diff = Math.round((new Date(hi)-new Date(lo))/86400000)+1;
+  el.textContent = `${lo} ~ ${hi} (${diff}일)`;
+}
+
+function getSelectedDates() {
+  if (!rangeStart) return [];
+  if (!rangeEnd) return availDates.has(rangeStart) ? [rangeStart] : [];
+  const lo = rangeStart<rangeEnd?rangeStart:rangeEnd;
+  const hi = rangeStart<rangeEnd?rangeEnd:rangeStart;
+  const result = [];
+  let cur = new Date(lo); const end = new Date(hi);
+  while (cur<=end) {
+    const ds = fmtDate(cur);
+    if (availDates.has(ds)) result.push(ds);
+    cur.setDate(cur.getDate()+1);
+  }
+  return result;
+}
+
+function aggregateData(dates) {
+  const pages={}, users={}, lightKws={}, compareKws=[];
+  for (const d of dates) {
+    const day = allData[d]||{};
+    for (const [p,cnt] of Object.entries(day.pages||{})) pages[p]=(pages[p]||0)+cnt;
+    for (const [p,ulist] of Object.entries(day.users||{})) {
+      if (!users[p]) users[p]=new Set();
+      (ulist||[]).forEach(u=>users[p].add(u));
+    }
+    for (const [kw,cnt] of Object.entries((day.keywords||{}).light||{})) lightKws[kw]=(lightKws[kw]||0)+cnt;
+    compareKws.push(...((day.keywords||{}).compare||[]));
+  }
+  const usersArr={};
+  for (const [p,s] of Object.entries(users)) usersArr[p]=[...s];
+  return {pages, users:usersArr, lightKws, compareKws};
+}
+
+function renderAll() {
+  const dates = getSelectedDates();
+  if (!dates.length) {
+    ["s-total","s-unique","s-light","s-compare"].forEach(id=>document.getElementById(id).textContent="—");
+    document.getElementById("page-table").innerHTML='<tr><td colspan="4" class="empty">선택한 기간에 데이터 없음</td></tr>';
+    document.getElementById("light-keywords").innerHTML='<div class="empty">데이터 없음</div>';
+    document.getElementById("compare-keywords").innerHTML='<div class="empty">데이터 없음</div>';
+    return;
+  }
+  const {pages,users,lightKws,compareKws} = aggregateData(dates);
+  const totalVisits = Object.values(pages).reduce((a,b)=>a+b,0);
+  const allUsers = new Set(Object.values(users).flat());
+  document.getElementById("s-total").textContent = totalVisits.toLocaleString();
+  document.getElementById("s-unique").textContent = allUsers.size.toLocaleString();
+  document.getElementById("s-light").textContent = Object.keys(lightKws).length.toLocaleString();
+  document.getElementById("s-compare").textContent = compareKws.length.toLocaleString();
+
+  const maxVisit = Math.max(...Object.values(pages),1);
+  const sorted = Object.entries(pages).sort((a,b)=>b[1]-a[1]);
+  document.getElementById("page-table").innerHTML = sorted.length ? sorted.map(([page,cnt])=>{
+    const uCnt=(users[page]||[]).length;
+    const pct=Math.round(cnt/maxVisit*100);
+    const color=PAGE_COLORS[page]||"#4f8ef7";
+    return `<tr>
+      <td><span class="page-badge" style="background:${color}22;color:${color}">${PAGE_LABELS[page]||page}</span></td>
+      <td><strong>${cnt.toLocaleString()}</strong></td><td>${uCnt}</td>
+      <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="bar-val" style="color:${color}">${pct}%</div></div></td></tr>`;
+  }).join("") : '<tr><td colspan="4" class="empty">방문 데이터 없음</td></tr>';
+
+  const lkws=Object.entries(lightKws).sort((a,b)=>b[1]-a[1]);
+  document.getElementById("light-keywords").innerHTML = lkws.length
+    ? `<div class="kw-grid">${lkws.map(([kw,cnt])=>`<div class="kw-chip"><span class="kw-text">${kw}</span><span class="kw-cnt">${cnt}회</span></div>`).join("")}</div>`
+    : '<div class="empty">검색 기록 없음</div>';
+
+  const ckws=[...compareKws].reverse();
+  document.getElementById("compare-keywords").innerHTML = ckws.length
+    ? `<div class="kw-list">${ckws.slice(0,30).map(k=>`<div class="kw-row"><span class="kw-time">${k.time||''}</span><span class="kw-text">${k.keyword}</span></div>`).join("")}</div>`
+    : '<div class="empty">검색 기록 없음</div>';
+}
+
+init();
+</script>
+</body>
+</html>

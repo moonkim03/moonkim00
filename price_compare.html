@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>가격비교 — AI 상품 모니터링</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0a0c10; --surface:#111318; --surface2:#1a1c22; --surface3:#222530;
+      --border:#242830; --border2:#2e3340;
+      --accent:#4f8ef7; --orange:#f97316; --purple:#a855f7; --green:#22d3a0;
+      --red:#f7566a; --yellow:#fbbf24;
+      --text:#e8eaf0; --text2:#8b90a0; --text3:#555a6a;
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* 헤더 */
+    .header {
+      background:var(--surface); border-bottom:1px solid var(--border);
+      padding:0 24px; height:52px; display:flex; align-items:center; gap:12px;
+      position:sticky; top:0; z-index:100;
+    }
+    .header a.back { color:var(--text2); text-decoration:none; font-size:12px; padding:5px 10px; border-radius:6px; border:1px solid var(--border2); transition:all .15s; }
+    .header a.back:hover { color:var(--accent); border-color:var(--accent); }
+    .header-title { font-size:14px; font-weight:700; }
+    .header-sub { font-size:11px; color:var(--text3); margin-left:2px; }
+
+    .wrap { max-width:900px; margin:0 auto; padding:32px 20px 80px; }
+
+    /* 검색 */
+    .search-area { margin-bottom:28px; }
+    .search-tag { display:inline-block; padding:4px 14px; border-radius:20px; background:rgba(79,142,247,.1); border:1px solid rgba(79,142,247,.2); font-size:10px; font-weight:700; color:var(--accent); letter-spacing:.1em; text-transform:uppercase; margin-bottom:14px; }
+    .search-title { font-size:clamp(22px,4vw,32px); font-weight:900; letter-spacing:-0.03em; margin-bottom:6px; }
+    .search-title span { color:var(--accent); }
+    .search-sub { font-size:12px; color:var(--text3); margin-bottom:20px; }
+
+    .search-box {
+      display:flex; gap:0; background:var(--surface); border:1px solid var(--border2);
+      border-radius:12px; overflow:hidden; transition:border-color .2s; margin-bottom:16px;
+    }
+    .search-box:focus-within { border-color:var(--accent); }
+    .search-box input {
+      flex:1; padding:14px 18px; border:none; background:transparent; color:var(--text);
+      font-size:15px; font-family:inherit; outline:none;
+    }
+    .search-box input::placeholder { color:var(--text3); }
+    .search-box button {
+      padding:0 28px; border:none; background:var(--accent); color:#fff;
+      font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:background .2s;
+      white-space:nowrap;
+    }
+    .search-box button:hover { background:#3a7be0; }
+    .search-box button:disabled { background:var(--surface3); color:var(--text3); cursor:not-allowed; }
+
+    /* 쇼핑몰 선택 */
+    .site-selector {
+      background:var(--surface); border:1px solid var(--border); border-radius:12px;
+      padding:14px 16px;
+    }
+    .ss-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .ss-label { font-size:12px; color:var(--text2); font-weight:600; }
+    .ss-label span { color:var(--accent); }
+    .ss-actions { display:flex; gap:6px; }
+    .ss-btn { padding:3px 10px; border-radius:5px; border:1px solid var(--border2); background:transparent; color:var(--text3); font-size:11px; cursor:pointer; font-family:inherit; transition:all .15s; }
+    .ss-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .ss-grid { display:flex; flex-wrap:wrap; gap:7px; }
+    .ss-chip {
+      display:flex; align-items:center; gap:5px; padding:5px 11px;
+      border-radius:20px; border:1px solid var(--border); background:var(--surface2);
+      cursor:pointer; transition:all .15s; user-select:none; font-size:12px; font-weight:500;
+    }
+    .ss-chip:has(input:checked) { border-color:rgba(79,142,247,.5); background:rgba(79,142,247,.08); }
+    .ss-chip.fixed { border-color:rgba(249,115,22,.4); background:rgba(249,115,22,.08); cursor:default; }
+    .ss-chip input { display:none; }
+    .ss-chip .ss-icon { font-size:13px; }
+
+    /* 로딩 */
+    .loading {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:60px 20px; gap:16px;
+    }
+    .spinner {
+      width:40px; height:40px; border:3px solid var(--border2);
+      border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-text { font-size:13px; color:var(--text2); }
+    .loading-sites { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:4px; }
+    .loading-site {
+      font-size:11px; padding:3px 10px; border-radius:12px;
+      background:var(--surface); border:1px solid var(--border); color:var(--text3);
+      transition:all .3s;
+    }
+    .loading-site.done { border-color:var(--green); color:var(--green); background:rgba(34,211,160,.08); }
+    .loading-site.searching { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,.08); animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    /* 결과 */
+    .result-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:16px; flex-wrap:wrap; gap:8px;
+    }
+    .result-kw { font-size:16px; font-weight:800; }
+    .result-kw em { color:var(--accent); font-style:normal; }
+    .result-sub { font-size:12px; color:var(--text3); margin-top:2px; }
+    .result-reset {
+      padding:6px 14px; border-radius:7px; border:1px solid var(--border2);
+      background:transparent; color:var(--text2); font-size:12px; cursor:pointer; font-family:inherit;
+      transition:all .15s;
+    }
+    .result-reset:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* 사이트별 결과 */
+    .site-section {
+      background:var(--surface); border:1px solid var(--border); border-radius:14px;
+      margin-bottom:12px; overflow:hidden;
+      animation: fadeIn .3s ease both;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    .site-header {
+      display:flex; align-items:center; gap:10px; padding:12px 16px;
+      border-bottom:1px solid var(--border); background:var(--surface2);
+    }
+    .site-icon { font-size:18px; }
+    .site-name { font-size:13px; font-weight:700; flex:1; }
+    .site-count { font-size:11px; color:var(--text3); }
+    .site-link { font-size:11px; color:var(--accent); text-decoration:none; padding:3px 8px; border-radius:5px; border:1px solid rgba(79,142,247,.3); transition:all .15s; }
+    .site-link:hover { background:rgba(79,142,247,.1); }
+
+    /* 상품 목록 */
+    .product-list { padding:4px 0; }
+    .product-row {
+      display:flex; align-items:center; gap:12px;
+      padding:10px 16px; border-bottom:1px solid rgba(255,255,255,.03);
+      transition:background .12s; cursor:pointer; text-decoration:none; color:inherit;
+    }
+    .product-row:last-child { border-bottom:none; }
+    .product-row:hover { background:rgba(255,255,255,.03); }
+
+    .pr-rank {
+      font-size:12px; font-weight:700; color:var(--text3);
+      width:20px; text-align:center; flex-shrink:0;
+    }
+    .pr-rank.top1 { font-size:16px; }
+
+    .pr-info { flex:1; min-width:0; }
+    .pr-name {
+      font-size:12.5px; font-weight:500; color:var(--text);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      margin-bottom:3px;
+    }
+    .pr-price {
+      font-size:16px; font-weight:900; letter-spacing:-0.03em;
+    }
+    .pr-arrow { font-size:14px; color:var(--text3); flex-shrink:0; transition:transform .15s; }
+    .product-row:hover .pr-arrow { transform:translateX(3px); color:var(--accent); }
+
+    .site-error { padding:16px; font-size:12px; color:var(--text3); text-align:center; }
+    .site-empty { padding:20px; font-size:12px; color:var(--text3); text-align:center; }
+
+    /* 가격 색상 */
+    .price-1 { color:#fbbf24; }  /* 1등 - 골드 */
+    .price-best { color:var(--green); }
+
+    /* 신세계 고정 뱃지 */
+    .fixed-badge { font-size:9px; padding:2px 6px; border-radius:4px; background:rgba(249,115,22,.15); color:var(--orange); border:1px solid rgba(249,115,22,.3); margin-left:4px; vertical-align:middle; }
+
+    /* 2분할 그리드 */
+    .results-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    .site-section { margin-bottom:0; }
+
+    @media(max-width:700px) {
+      .results-grid { grid-template-columns:1fr; }
+      .wrap { padding:20px 12px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a href="/" class="back">← 홈</a>
+  <div class="header-title">가격비교</div>
+  <div class="header-sub">Price Compare</div>
+</div>
+
+<div class="wrap">
+  <div id="app"></div>
+</div>
+
+<script>
+const SITES = [
+  {id:"shinsegaetv", n:"신세계쇼핑", i:"📺", c:"#C8102E", fixed:true,
+   u:"https://www.shinsegaetvshopping.com/goods-search/search?searchKeyword={kw}&trackSearchType=pc_normal"},
+  {id:"coupang",     n:"쿠팡",      i:"🚀", c:"#E01E5A", fixed:false,
+   u:"https://www.coupang.com/np/search?component=&q={kw}"},
+  {id:"gmarket",     n:"G마켓",     i:"🟢", c:"#00A651", fixed:false,
+   u:"https://www.gmarket.co.kr/n/search?keyword={kw}"},
+  {id:"ssg",         n:"쓱닷컴",    i:"✨", c:"#FF5452", fixed:false,
+   u:"https://www.ssg.com/search.ssg?target=all&query={kw}"},
+  {id:"gsshop",      n:"GS SHOP",  i:"🟠", c:"#FF6B35", fixed:false,
+   u:"https://www.gsshop.com/shop/search/noResult.gs?tq={kw}&ab=df&revision=Y&lseq=390247"},
+  {id:"cjonstyle",   n:"CJ온스타일",i:"🔵", c:"#0066FF", fixed:false,
+   u:"https://display.cjonstyle.com/p/search/searchAllList?k={kw}&searchType=ALL"},
+  {id:"hyundai",     n:"현대홈쇼핑", i:"🏠", c:"#22d3a0", fixed:false,
+   u:"https://www.hmall.com/md/pde/search?gnbSearchYn=Y&requestPath=w&tab=all&searchTerm={kw}&searchType=normal"},
+  {id:"lotteon",     n:"롯데온",    i:"🔴", c:"#E60012", fixed:false,
+   u:"https://www.lotteon.com/search/search/search.ecn?render=search&platform=pc&q={kw}"},
+  {id:"kurly",       n:"컬리",      i:"🟣", c:"#5F0080", fixed:false,
+   u:"https://www.kurly.com/search?sword={kw}&page=1"},
+  {id:"queenit",     n:"퀸잇",      i:"👑", c:"#D4467E", fixed:false,
+   u:"https://web.queenit.kr/search?prefilter=&keyword={kw}"},
+  {id:"halfclub",    n:"하프클럽",   i:"🏷️", c:"#FF2D55", fixed:false,
+   u:"https://www.halfclub.com/search/{kw}"},
+];
+
+const $ = id => document.getElementById(id);
+let kw = "";
+let searching = false;
+
+function getSelected() {
+  const checked = document.querySelectorAll(".ss-cb:checked");
+  const ids = new Set([...checked].map(c => c.value));
+  return SITES.filter(s => s.fixed || ids.has(s.id));
+}
+
+function updateCount() {
+  const fixed = SITES.filter(s => s.fixed).length;
+  const checked = document.querySelectorAll(".ss-cb:checked").length;
+  const el = document.getElementById("ss-count");
+  if (el) el.textContent = `(${fixed + checked}개 선택됨)`;
+}
+
+function selectAll(val) {
+  document.querySelectorAll(".ss-cb").forEach(c => c.checked = val);
+  updateCount();
+}
+
+function siteUrl(s, keyword) {
+  return s.u.replace("{kw}", encodeURIComponent(keyword));
+}
+
+// ── 메인 화면 ──
+function showMain() {
+  const fixedCount = SITES.filter(s => s.fixed).length;
+  const totalSelected = SITES.length;
+
+  let h = `
+  <div class="search-area">
+    <div class="search-tag">Price Compare</div>
+    <div class="search-title">가격비교 <span>Compare</span></div>
+    <div class="search-sub">상품명으로 검색하면 쇼핑몰별 최저가 5개를 보여드려요</div>
+    <div class="search-box">
+      <input type="text" id="q" placeholder="상품명 입력 (예: 남독마이 생망고)"/>
+      <button id="search-btn" onclick="doSearch()">검색</button>
+    </div>
+    <div class="site-selector">
+      <div class="ss-top">
+        <div class="ss-label">쇼핑몰 선택 <span id="ss-count">(${totalSelected}개 선택됨)</span></div>
+        <div class="ss-actions">
+          <button class="ss-btn" onclick="selectAll(true)">전체 선택</button>
+          <button class="ss-btn" onclick="selectAll(false)">전체 해제</button>
+        </div>
+      </div>
+      <div class="ss-grid">
+        ${SITES.map(s => s.fixed
+          ? `<label class="ss-chip fixed" title="고정">
+               <span class="ss-icon">${s.i}</span>
+               <span style="color:${s.c}">${s.n}</span>
+               <span class="fixed-badge">고정</span>
+             </label>`
+          : `<label class="ss-chip">
+               <input type="checkbox" class="ss-cb" value="${s.id}" checked onchange="updateCount()"/>
+               <span class="ss-icon">${s.i}</span>
+               <span style="color:${s.c}">${s.n}</span>
+             </label>`
+        ).join("")}
+      </div>
+    </div>
+  </div>
+  <div id="result-area"></div>`;
+
+  $("app").innerHTML = h;
+  $("q").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+  $("q").focus();
+}
+
+// ── 검색 실행 ──
+async function doSearch() {
+  const v = $("q") ? $("q").value.trim() : "";
+  if (!v || searching) return;
+  const selected = getSelected();
+  if (!selected.length) { alert("쇼핑몰을 선택해주세요!"); return; }
+
+  kw = v;
+  searching = true;
+  const btn = $("search-btn");
+  if (btn) btn.disabled = true;
+
+  // 로딩 UI
+  const resultArea = $("result-area");
+  resultArea.innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">"<strong>${kw}</strong>" 검색 중...</div>
+      <div class="loading-sites">
+        ${selected.map(s => `<div class="loading-site searching" id="ls-${s.id}">${s.i} ${s.n}</div>`).join("")}
+      </div>
+    </div>`;
+
+  // 각 사이트 크롤링 API 호출
+  const siteIds = selected.map(s => s.id).join(",");
+
+  try {
+    // 포트 5000 직접 호출
+    const res = await fetch(`/api/price-search?q=${encodeURIComponent(kw)}&sites=${siteIds}`);
+    const data = await res.json();
+    showResults(data, selected);
+  } catch(e) {
+    resultArea.innerHTML = `<div style="text-align:center;padding:40px;color:var(--red)">
+      ❌ 검색 서버를 확인해주세요. (price_crawler.py 실행 중인지 확인)<br><small style="color:var(--text3)">${e.message}</small>
+    </div>`;
+  }
+
+  searching = false;
+  if (btn) btn.disabled = false;
+}
+
+// ── 결과 표시 ──
+function showResults(data, selected) {
+  const resultArea = $("result-area");
+  const results = data.results || {};
+
+  let h = `<div class="result-header">
+    <div>
+      <div class="result-kw">"<em>${kw}</em>" 검색 결과</div>
+      <div class="result-sub">${selected.length}개 쇼핑몰 · 최저가순 최대 5개</div>
+    </div>
+    <button class="result-reset" onclick="resetSearch()">새 검색</button>
+  </div>`;
+
+  h += `<div class="results-grid">`;
+  selected.forEach((site, idx) => {
+    const r = results[site.id];
+    h += `<div class="site-section" style="animation-delay:${idx*0.05}s">`;
+    h += `<div class="site-header">
+      <div class="site-icon">${site.i}</div>
+      <div class="site-name" style="color:${site.c}">${site.n}</div>`;
+
+    if (r && r.products && r.products.length) {
+      h += `<div class="site-count">${r.products.length}개</div>`;
+      h += `<a href="${siteUrl(site, kw)}" target="_blank" class="site-link">검색페이지 →</a>`;
+    }
+    h += `</div>`;
+
+    if (!r || r.error) {
+      h += `<div class="site-error">❌ 수집 실패 · <a href="${siteUrl(site, kw)}" target="_blank" style="color:var(--accent)">직접 검색하기 →</a></div>`;
+    } else if (!r.products || !r.products.length) {
+      h += `<div class="site-empty">상품을 찾지 못했어요 · <a href="${siteUrl(site, kw)}" target="_blank" style="color:var(--accent)">직접 검색하기 →</a></div>`;
+    } else {
+      h += `<div class="product-list">`;
+      r.products.slice(0, 5).forEach((p, i) => {
+        const rankLabel = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
+        const rankCls = i === 0 ? "top1" : "";
+        const priceColor = i === 0 ? "price-1" : "price-best";
+        const priceFormatted = p.price ? p.price.toLocaleString() + "원" : "가격 없음";
+        h += `<a class="product-row" href="${p.link||siteUrl(site,kw)}" target="_blank">
+          <div class="pr-rank ${rankCls}">${rankLabel}</div>
+          <div class="pr-info">
+            <div class="pr-name">${p.name}</div>
+            <div class="pr-price ${i===0?'price-1':''}" style="${i>0?`color:${site.c}`:''}">
+              ${priceFormatted}
+            </div>
+          </div>
+          <div class="pr-arrow">→</div>
+        </a>`;
+      });
+      h += `</div>`;
+    }
+    h += `</div>`;
+  });
+
+  h += `</div>`;  // results-grid
+  resultArea.innerHTML = h;
+}
+
+function resetSearch() {
+  const q = $("q");
+  if (q) { q.value = ""; q.focus(); }
+  $("result-area").innerHTML = "";
+}
+
+showMain();
+</script>
+</body>
+</html>
