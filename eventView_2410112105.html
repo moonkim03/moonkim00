@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="description" content="트렌디한 쇼핑리더, 엣지있는 쇼핑채널!">
+<title>[신세계쇼핑] 이벤트 - 혜택 모두 받기</title>
+<link rel="icon" href="https://img.shinsegaetvshopping.com/resources_new/img/ico_web_144x144.png">
+
+<!-- jQuery -->
+<script type="text/javascript" src="https://img.shinsegaetvshopping.com/resources_new/js/jquery-2.1.1.min.js"></script>
+
+<!-- 신세계쇼핑 공통 CSS -->
+<link rel="stylesheet" href="https://img.shinsegaetvshopping.com/resources_new/css/variable.css">
+<link rel="stylesheet" href="https://m.shinsegaetvshopping.com/resources_new/css/common_re.css">
+<link rel="stylesheet" href="https://m.shinsegaetvshopping.com/resources_new/css/plan_re.css">
+<link rel="stylesheet" href="https://m.shinsegaetvshopping.com/resources_new/css/layout.css">
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: #fff; }
+
+    .event-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: #fff;
+        border-bottom: 1px solid #e5e5e5;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+    }
+    .event-header h1 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .event-header .btn-back {
+        position: absolute;
+        left: 12px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #333;
+        padding: 4px 8px;
+    }
+    .event-header .btn-home {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: #333;
+        padding: 4px 8px;
+    }
+
+    .event-content {
+        width: 100%;
+        max-width: 100%;
+    }
+    .event-content img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    /* 혜택모두받기 버튼 영역 */
+    .benefit-btn-wrap {
+        width: 100%;
+        position: relative;
+    }
+    .benefit-btn-wrap a {
+        display: block;
+        width: 100%;
+        cursor: pointer;
+    }
+    .benefit-btn-wrap a img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    /* 버튼 로딩/완료 상태 */
+    .benefit-btn-wrap.loading a {
+        pointer-events: none;
+        opacity: 0.7;
+    }
+    .benefit-btn-wrap.done a {
+        pointer-events: none;
+    }
+
+    /* 결과 메시지 토스트 */
+    .toast-msg {
+        display: none;
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 24px;
+        font-size: 14px;
+        z-index: 9999;
+        white-space: nowrap;
+        max-width: 90%;
+        text-align: center;
+    }
+
+    /* 로딩 오버레이 */
+    .loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.6);
+        z-index: 9998;
+        justify-content: center;
+        align-items: center;
+    }
+    .loading-overlay.active {
+        display: flex;
+    }
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #ddd;
+        border-top: 3px solid #333;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="event-header">
+    <button type="button" class="btn-back" onclick="history.back();">&larr;</button>
+    <h1>이벤트 혜택 모두 받기</h1>
+    <button type="button" class="btn-home" onclick="location.href='https://m.shinsegaetvshopping.com/index';">&#8962;</button>
+</header>
+
+<!-- 이벤트 콘텐츠 -->
+<div class="event-content">
+
+    <!-- 상단 배너 이미지 (welcome 페이지 상단 이미지 재사용) -->
+    <div>
+        <img src="https://img.shinsegaetvshopping.com/banner/236/1119236_20250710172624.jpg" alt="WELCOME 특별 혜택" />
+    </div>
+
+    <!-- 혜택 모두 받기 버튼 -->
+    <div class="benefit-btn-wrap" id="benefitBtnWrap">
+        <a href="javascript:;" id="eventSubmit">
+            <img src="https://img.shinsegaetvshopping.com/banner/267/1118267_20250626133512.jpg" alt="혜택 모두 받기">
+        </a>
+    </div>
+
+    <!-- 하단 안내 이미지들 -->
+    <div>
+        <img src="https://img.shinsegaetvshopping.com/banner/238/1119238_20250710172649.jpg" alt="welcome_3" />
+    </div>
+    <div>
+        <img src="https://img.shinsegaetvshopping.com/banner/239/1119239_20250710172659.jpg" alt="welcome_4" />
+    </div>
+
+    <!-- 유의사항 토글 -->
+    <div style="position: relative; width: 100%">
+        <a href="javascript:" class="evt-btn-caution" style="display:block;">
+            <img src="https://img.shinsegaetvshopping.com/banner/270/1118270_20250626133722.jpg" alt="유의사항을 꼭 확인해주세요">
+        </a>
+        <a href="javascript:" class="evt-btn-caution2" style="display:none;">
+            <img src="https://img.shinsegaetvshopping.com/banner/270/1118270_20250626133801.jpg" alt="유의사항을 꼭 확인해주세요">
+        </a>
+    </div>
+    <div class="evt-caution" style="display:none;">
+        <img src="https://img.shinsegaetvshopping.com/banner/270/1118270_20250626133825.jpg" style="width:100%; height:auto" alt="유의사항">
+    </div>
+</div>
+
+<!-- 토스트 메시지 -->
+<div class="toast-msg" id="toastMsg"></div>
+
+<!-- 로딩 오버레이 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- 공통 유틸 스크립트 -->
+<script type="text/javascript" src="https://img.shinsegaetvshopping.com/resources_new/js/common/comUtil.js"></script>
+<script type="text/javascript" src="https://img.shinsegaetvshopping.com/resources_new/js/lib/jquery.number.min.js"></script>
+<script type="text/javascript" src="https://m.shinsegaetvshopping.com/resources_new/messages/ko_KR/message-common.js"></script>
+
+<script type="text/javascript">
+/**
+ * 혜택 모두 받기 버튼 기능
+ * - welcome 페이지의 eventSubmit() / afterPushStateFunction() 로직을 동일하게 구현
+ * - /promotion/insertApplyEvent API를 호출하여 쿠폰/혜택 일괄 다운로드
+ */
+
+var AppFlag = "false";
+
+// 공통 Ajax 함수 (welcome 페이지와 동일)
+function commonAjax(target_url, target_data, target_dataType, target_method) {
+    return jQuery.ajax({
+        url: target_url,
+        type: target_method,
+        data: target_data,
+        dataType: target_dataType,
+        cache: false,
+        timeout: 200000,
+        contentType: "application/x-www-form-urlencoded;charset=UTF-8"
+    });
+}
+
+// 페이지 이동 함수
+function goSecurePage(url) {
+    window.location.href = "https://m.shinsegaetvshopping.com" + url;
+}
+
+function goPage(url) {
+    if (url.indexOf('http://') >= 0 || url.indexOf('https://') >= 0) {
+        window.location.href = url;
+    } else {
+        window.location.href = "https://m.shinsegaetvshopping.com" + url;
+    }
+}
+
+// 토스트 메시지 표시
+function showToast(message) {
+    var $toast = jQuery('#toastMsg');
+    $toast.text(message).finish().fadeIn(200).delay(2500).fadeOut(400);
+}
+
+// 로딩 표시/숨김
+function showLoading() {
+    jQuery('#loadingOverlay').addClass('active');
+}
+function hideLoading() {
+    jQuery('#loadingOverlay').removeClass('active');
+}
+
+// 앱 버전 추출
+function getAppVersionFromUserAgent() {
+    var userAgent = navigator.userAgent;
+    var match = userAgent.match(/appVersion::([\d.]+)/);
+    return match ? match[1] : null;
+}
+
+/**
+ * 혜택 모두 받기 - 실제 API 호출
+ * welcome 페이지의 afterPushStateFunction() 과 동일한 로직
+ */
+function downloadAllBenefits() {
+    var param = [];
+    // welcome 이벤트 번호 사용 (원본 페이지와 동일)
+    param.push("eventNo=welcome");
+    param.push("&isApp=0");
+    param.push("&isPush=0");
+    param.push("&appVersion=0");
+
+    // amplitude 태깅 파라미터
+    var app_name = (AppFlag == 'true' ? 'app' : 'mobile_web');
+    var app_version_amp = (AppFlag == 'true' ? getAppVersionFromUserAgent() : '');
+    var referrer_parameter_url = document.referrer || null;
+    var parameter_url = window.location.href;
+    var btn_name = '쿠폰 다운받기';
+
+    param.push("&appName=" + app_name);
+    param.push("&appVersionAmp=" + (app_version_amp || ''));
+    param.push("&referrerParameterUrl=" + (referrer_parameter_url || ''));
+    param.push("&parameterUrl=" + parameter_url);
+    param.push("&btnName=" + btn_name);
+    param.push("&eventTitle=[26년 3월] WELCOME 특별 혜택");
+
+    showLoading();
+
+    commonAjax("/promotion/insertApplyEvent", param.join(''), 'json', 'GET')
+        .done(function(data, textStatus, jqXHR) {
+            hideLoading();
+            if ("200" == data.code || "204" == data.code) {
+                // 혜택 다운로드 성공
+                alert(data.message);
+                jQuery('#benefitBtnWrap').addClass('done');
+            } else if ("401" == data.code) {
+                // 로그인 필요
+                alert("로그인 시 발급이 가능합니다.");
+                goSecurePage('/member/login?forwardUrl=/event/eventView/2410112105');
+            } else if ("417" == data.code) {
+                alert(data.message);
+            } else if ("203" == data.code) {
+                // 앱 전용 이벤트
+                if (confirm("본 이벤트/기획전은 모바일앱에서만 적용됩니다. 모바일앱으로 이동하시겠습니까?")) {
+                    moveToApp();
+                }
+            } else if ("601" == data.code) {
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            hideLoading();
+            alert("일시적인 오류가 발생했습니다. 다시 시도해 주세요.");
+        });
+}
+
+/**
+ * 혜택 모두 받기 버튼 클릭 핸들러
+ * welcome 페이지의 eventSubmit() 과 동일한 흐름
+ */
+function eventSubmit() {
+    // 로그인 체크 후 혜택 다운로드 시도
+    // 비로그인 상태에서는 API가 401을 반환하므로 바로 호출
+    downloadAllBenefits();
+}
+
+// 앱 이동
+function moveToApp() {
+    var path = window.location.pathname;
+    var param = window.location.search;
+    if (param.indexOf('?') > -1) {
+        param = param + "&applinkIgnoreYn=0";
+    } else {
+        param = "?applinkIgnoreYn=0";
+    }
+    goPage("/common/openApp?deepLinkUrl=" + encodeURIComponent(path + param));
+}
+
+// DOM Ready
+jQuery(function() {
+
+    // 혜택 모두 받기 버튼 클릭
+    jQuery('#eventSubmit').click(function(e) {
+        e.preventDefault();
+        eventSubmit();
+    });
+
+    // 유의사항 토글
+    jQuery('.evt-btn-caution, .evt-btn-caution2').click(function(e) {
+        e.preventDefault();
+        var t = jQuery(this),
+            caution = t.parent().next('.evt-caution');
+        if (caution.is(':visible')) {
+            caution.hide();
+            t.css('display', 'none');
+            t.siblings('.evt-btn-caution').css('display', 'block');
+        } else {
+            caution.show();
+            t.css('display', 'none');
+            t.siblings('.evt-btn-caution2').css('display', 'block');
+        }
+    });
+
+});
+</script>
+
+</body>
+</html>
